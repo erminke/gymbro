@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Sync - Gymbro</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .log { background: #111; padding: 10px; margin: 10px 0; border-left: 3px solid #0f0; }
+        .error { border-left-color: #f00; color: #f00; }
+        .success { border-left-color: #0f0; color: #0f0; }
+        .info { border-left-color: #00f; color: #00f; }
+        button { padding: 10px 20px; margin: 10px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
+        button:hover { background: #555; }
+        pre { background: #222; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Gymbro Sync Debug Tool</h1>
+    
+    <div class="controls">
+        <button onclick="checkAuth()">Check Auth Status</button>
+        <button onclick="testSync()">Test Sync From Server</button>
+        <button onclick="showLocalData()">Show Local Data</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <!-- Load dependencies -->
+    <script src="js/storage.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    
+    <script>
+        const logsDiv = document.getElementById('logs');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(div);
+            console.log(`[${type}] ${message}`);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+        }
+        
+        async function checkAuth() {
+            log('🔍 Checking authentication status...', 'info');
+            
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                log('❌ No auth token found in localStorage', 'error');
+                return;
+            }
+            
+            log(`✅ Token found: ${token.substring(0, 20)}...`, 'success');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    log(`❌ Token verification failed: ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Token verified successfully: ${JSON.stringify(data)}`, 'success');
+                
+                // Check if API service is available
+                if (window.api) {
+                    log('✅ API service is available', 'success');
+                    const user = window.api.getUser();
+                    log(`✅ User data: ${JSON.stringify(user)}`, 'success');
+                } else {
+                    log('❌ API service not available', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error verifying token: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSync() {
+            log('🔄 Testing sync from server...', 'info');
+            
+            if (!window.api) {
+                log('❌ API service not available', 'error');
+                return;
+            }
+            
+            try {
+                await window.api.syncFromServer();
+                log('✅ Sync from server completed successfully', 'success');
+                
+                // Show what was synced
+                const storage = new GainsStorage();
+                const data = storage.get();
+                log(`📊 Synced data summary:`, 'success');
+                log(`   - Workouts: ${data.workoutHistory?.length || 0}`, 'success');
+                log(`   - Meals: ${data.mealPlan?.length || 0}`, 'success');
+                log(`   - Supplements: ${data.customSupplements?.length || 0}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Sync failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function showLocalData() {
+            log('📊 Showing local storage data...', 'info');
+            
+            try {
+                const storage = new GainsStorage();
+                const data = storage.get();
+                
+                log(`📋 Local data summary:`, 'info');
+                log(`   - Workouts: ${data.workoutHistory?.length || 0}`, 'info');
+                log(`   - Meals: ${data.mealPlan?.length || 0}`, 'info');
+                log(`   - Supplements: ${data.customSupplements?.length || 0}`, 'info');
+                
+                // Show raw data
+                const div = document.createElement('div');
+                div.className = 'log info';
+                div.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                logsDiv.appendChild(div);
+                
+            } catch (error) {
+                log(`❌ Error reading local data: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('🚀 Debug tool loaded', 'success');
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

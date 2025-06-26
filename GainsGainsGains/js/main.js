@@ -281,6 +281,17 @@ class GainsApp {
                 const loggedWorkout = this.data.logWorkout(params);
                 console.log('Workout saved to storage:', loggedWorkout);
                 
+                // Sync to server
+                if (window.api) {
+                    window.api.syncToServer().then(success => {
+                        if (success) {
+                            console.log('📤 Workout synced to server');
+                        } else {
+                            console.log('⚠️ Workout sync failed, will retry later');
+                        }
+                    });
+                }
+                
                 // Clear the form
                 this.ui.clearForm('workoutForm');
                 
@@ -296,6 +307,17 @@ class GainsApp {
                     console.log('Updating workout with params:', params);
                     const updatedWorkout = this.data.updateWorkout(params.workoutId, params);
                     console.log('Workout updated successfully:', updatedWorkout);
+                    
+                    // Sync to server
+                    if (window.api) {
+                        window.api.syncToServer().then(success => {
+                            if (success) {
+                                console.log('📤 Updated workout synced to server');
+                            } else {
+                                console.log('⚠️ Workout update sync failed, will retry later');
+                            }
+                        });
+                    }
                     
                     // Clear edit mode and form
                     const form = document.getElementById('workoutForm');
@@ -321,6 +343,17 @@ class GainsApp {
                 const loggedMeal = this.data.logMeal(params);
                 console.log('Meal saved to storage:', loggedMeal);
                 
+                // Sync to server
+                if (window.api) {
+                    window.api.syncToServer().then(success => {
+                        if (success) {
+                            console.log('📤 Meal synced to server');
+                        } else {
+                            console.log('⚠️ Meal sync failed, will retry later');
+                        }
+                    });
+                }
+                
                 // Clear the form
                 this.ui.clearForm('mealForm');
                 
@@ -334,6 +367,17 @@ class GainsApp {
             case 'add_supplement':
                 try {
                     this.data.addSupplement(params);
+                    
+                    // Sync to server
+                    if (window.api) {
+                        window.api.syncToServer().then(success => {
+                            if (success) {
+                                console.log('📤 Supplement synced to server');
+                            } else {
+                                console.log('⚠️ Supplement sync failed, will retry later');
+                            }
+                        });
+                    }
                     
                     // Clear the form
                     this.ui.clearForm('addSupplementForm');
@@ -357,6 +401,18 @@ class GainsApp {
                 break;
             case 'add_weight_entry':
                 this.data.addWeightEntry(params.date, params.weight);
+                
+                // Sync to server
+                if (window.api) {
+                    window.api.syncToServer().then(success => {
+                        if (success) {
+                            console.log('📤 Weight entry synced to server');
+                        } else {
+                            console.log('⚠️ Weight sync failed, will retry later');
+                        }
+                    });
+                }
+                
                 this.ui.refreshWeightTracking();
                 this.ui.showNotification('Weight entry added!', 'success');
                 break;
@@ -754,6 +810,41 @@ class GainsApp {
             this.currentPage = pageId; // Ensure currentPage is in sync
             this.refreshCurrentPage();
         }
+    }
+
+    // Method to refresh all pages with current data
+    refreshAllPages() {
+        console.log('🔄 Refreshing all pages with current user data...');
+        
+        // Force refresh data from storage first
+        this.data.refreshDataFromStorage();
+        
+        // Refresh based on current page
+        switch(this.currentPage) {
+            case 'dashboard':
+                this.renderDashboardPage();
+                break;
+            case 'workouts':
+                this.renderWorkoutsPage();
+                break;
+            case 'meals':
+                this.renderMealsPage();
+                break;
+            case 'supplements':
+                this.renderSupplementsPage();
+                break;
+            case 'progress':
+                this.ui.renderProgressCharts('month');
+                this.ui.refreshWeightTracking();
+                break;
+        }
+        
+        // Always refresh dashboard data for sidebar and quick stats
+        this.ui.renderDashboard({
+            todaysWorkout: this.data.getTodaysWorkout()
+        });
+        
+        console.log('✅ All pages refreshed with user data');
     }
 }
 

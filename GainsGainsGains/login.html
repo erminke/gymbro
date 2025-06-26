@@ -362,26 +362,15 @@
             clearMessage();
 
             try {
-                const endpoint = authMode === 'login' ? 'login' : 'register';
-                const body = authMode === 'login' 
-                    ? { email, password }
-                    : { email, password, name };
+                let result;
+                
+                if (authMode === 'login') {
+                    result = await window.api.login(email, password);
+                } else {
+                    result = await window.api.register(email, password, name);
+                }
 
-                const response = await fetch(`http://localhost:3000/api/auth/${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Store auth data
-                    localStorage.setItem('auth_token', data.token);
-                    localStorage.setItem('user_data', JSON.stringify(data.user));
-                    
+                if (result.success) {
                     showMessage(
                         authMode === 'login' ? 'Login successful! Redirecting...' : 'Account created! Redirecting...', 
                         'success'
@@ -392,7 +381,7 @@
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
-                    showMessage(data.error || 'Authentication failed', 'error');
+                    showMessage(result.error || 'Authentication failed', 'error');
                 }
             } catch (error) {
                 console.error('Auth error:', error);

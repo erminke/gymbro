@@ -52,19 +52,37 @@ const Storage = {
             const data = localStorage.getItem(this.STORAGE_KEY);
             if (data) {
                 const parsed = JSON.parse(data);
-                return this.mergeWithDefaults(parsed);
+                const mergedData = this.mergeWithDefaults(parsed);
+                
+                console.log('📖 Storage.get called - returning data:', {
+                    workoutHistoryLength: mergedData.workoutHistory?.length || 0,
+                    mealHistoryLength: mergedData.mealHistory?.length || 0,
+                    customSupplementsLength: mergedData.customSupplements?.length || 0,
+                    hasWeightTracking: !!mergedData.weightTracking,
+                    keys: Object.keys(mergedData)
+                });
+                
+                return mergedData;
             }
         } catch (error) {
             console.error('Error reading from localStorage:', error);
         }
+        console.log('📖 Storage.get called - no stored data, returning defaults');
         return this.getDefaults();
     },
     
     // Set data to localStorage
     set(data) {
         try {
+            console.log('💾 Storage.set called with data:', data);
+            console.log('💾 Data keys:', Object.keys(data));
+            console.log('💾 Workout history length:', data.workoutHistory?.length || 0);
+            console.log('💾 Meal history length:', data.mealHistory?.length || 0);
+            
             const dataToStore = { ...data, lastUpdated: new Date().toISOString() };
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dataToStore));
+            
+            console.log('✅ Data stored to localStorage successfully');
             return true;
         } catch (error) {
             console.error('Error writing to localStorage:', error);

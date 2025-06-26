@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Data Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>User-Specific Data Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Register New User</h3>
+        <button onclick="registerNewUser()">Register test2@example.com</button>
+        <div id="register-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Login as Original User</h3>
+        <button onclick="loginOriginalUser()">Login test@example.com</button>
+        <div id="login1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Add Data to Original User</h3>
+        <button onclick="addWorkoutData()">Add Workout to test@example.com</button>
+        <div id="workout-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Login as New User</h3>
+        <button onclick="loginNewUser()">Login test2@example.com</button>
+        <div id="login2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 5: Check Data Separation</h3>
+        <button onclick="checkDataSeparation()">Check Both Users' Data</button>
+        <div id="data-result"></div>
+    </div>
+
+    <script>
+        let currentToken = null;
+        
+        async function registerNewUser() {
+            const result = document.getElementById('register-result');
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test2@example.com',
+                        password: 'password123',
+                        name: 'Test User 2'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✅ User registered: ${data.user.email}</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Registration failed: ${data.error}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function loginOriginalUser() {
+            const result = document.getElementById('login1-result');
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    currentToken = data.token;
+                    result.innerHTML = `<span class="success">✅ Original user logged in: ${data.user.email}</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Login failed: ${data.error}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function addWorkoutData() {
+            const result = document.getElementById('workout-result');
+            if (!currentToken) {
+                result.innerHTML = `<span class="error">❌ Please login first</span>`;
+                return;
+            }
+            
+            try {
+                const workoutData = {
+                    workoutHistory: [
+                        {
+                            id: Date.now().toString(),
+                            type: 'Strength Training',
+                            date: new Date().toISOString().split('T')[0],
+                            duration: 60,
+                            exercises: 'Bench Press, Squats, Deadlifts',
+                            notes: 'Great session!',
+                            timestamp: new Date().toISOString()
+                        }
+                    ],
+                    customSupplements: [
+                        {
+                            id: Date.now().toString(),
+                            name: 'Protein Powder',
+                            dosage: '30g',
+                            time: '09:00'
+                        }
+                    ]
+                };
+                
+                const response = await fetch('http://localhost:3000/api/data/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify(workoutData)
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✅ Workout data added to original user</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Failed to add data: ${data.error}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function loginNewUser() {
+            const result = document.getElementById('login2-result');
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test2@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    currentToken = data.token;
+                    result.innerHTML = `<span class="success">✅ New user logged in: ${data.user.email}</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Login failed: ${data.error}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function checkDataSeparation() {
+            const result = document.getElementById('data-result');
+            
+            // Check data for both users
+            const users = [
+                { email: 'test@example.com', password: 'password123' },
+                { email: 'test2@example.com', password: 'password123' }
+            ];
+            
+            let output = '<h4>Data Comparison:</h4>';
+            
+            for (const user of users) {
+                try {
+                    // Login as user
+                    const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    });
+                    
+                    const loginData = await loginResponse.json();
+                    if (!loginResponse.ok) continue;
+                    
+                    // Get user data
+                    const dataResponse = await fetch('http://localhost:3000/api/data/sync', {
+                        headers: { 'Authorization': `Bearer ${loginData.token}` }
+                    });
+                    
+                    const userData = await dataResponse.json();
+                    
+                    output += `
+                        <div style="margin: 10px 0; padding: 10px; background: #f5f5f5;">
+                            <strong>${user.email}:</strong><br>
+                            Workouts: ${userData.data?.workoutHistory?.length || 0}<br>
+                            Supplements: ${userData.data?.customSupplements?.length || 0}<br>
+                            Meals: ${userData.data?.mealHistory?.length || 0}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    output += `<div class="error">Error checking ${user.email}: ${error.message}</div>`;
+                }
+            }
+            
+            result.innerHTML = output;
+        }
+    </script>
+</body>
+</html>

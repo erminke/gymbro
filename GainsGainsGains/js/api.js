@@ -37,6 +37,10 @@ class APIService {
                 this.token = data.token;
                 localStorage.setItem('auth_token', this.token);
                 localStorage.setItem('user_data', JSON.stringify(data.user));
+                
+                // Clear any existing local data for new user
+                this.clearLocalAppData();
+                
                 return { success: true, user: data.user, token: data.token };
             } else {
                 return { success: false, error: data.error };
@@ -64,8 +68,18 @@ class APIService {
                 localStorage.setItem('auth_token', this.token);
                 localStorage.setItem('user_data', JSON.stringify(data.user));
                 
-                // Sync data after login
-                await this.syncFromServer();
+                // Clear any existing local data from previous sessions
+                this.clearLocalAppData();
+                
+                // Try to load THIS user's data from server (don't fail login if sync fails)
+                try {
+                    console.log('🔄 Loading user data from server after login...');
+                    await this.syncFromServer();
+                    console.log('✅ User data synced successfully');
+                } catch (syncError) {
+                    console.warn('⚠️ Sync failed during login, but login still successful:', syncError);
+                    // Don't fail the login if sync fails - user can manually sync later
+                }
                 
                 return { success: true, user: data.user, token: data.token };
             } else {
@@ -77,11 +91,70 @@ class APIService {
         }
     }
 
+    // Clear local app data but keep auth data
+    clearLocalAppData() {
+        // Remove all app data keys but keep auth-related data
+        const keysToKeep = ['auth_token', 'user_data', 'last_sync'];
+        const allKeys = Object.keys(localStorage);
+        
+        allKeys.forEach(key => {
+            if (!keysToKeep.includes(key)) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        // Initialize completely empty app data structure for new user
+        const emptyData = {
+            workoutHistory: [],
+            progressTracking: {},
+            supplementTracking: {},
+            mealHistory: [],
+            customSupplements: [],
+            goals: [],
+            weightTracking: {
+                profile: {},
+                history: []
+            },
+            plannedExercises: {},
+            customWorkoutPlan: {},
+            settings: {
+                units: 'metric',
+                theme: 'light'
+            }
+        };
+        
+        // Force save empty data structure using localStorage directly
+        localStorage.setItem('gymbro_data', JSON.stringify(emptyData));
+        
+        console.log('🧹 Local app data completely cleared for new user');
+        console.log('✨ Empty data structure initialized:', emptyData);
+    }
+
     logout() {
         this.token = null;
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
-        // Keep local data for offline use
+        localStorage.removeItem('last_sync');
+        
+        // Clear all app data when logging out
+        try {
+            this.clearLocalAppData();
+        } catch (error) {
+            console.error('Error clearing app data during logout:', error);
+            // Fallback: clear everything manually
+            const keysToKeep = [];
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => {
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        
+        console.log('🚪 User logged out successfully');
+        
+        // Redirect to login page
+        window.location.href = 'login.html';
     }
 
     isAuthenticated() {
@@ -136,6 +209,7 @@ class APIService {
         }
 
         try {
+            console.log('🔄 Attempting to sync from server...');
             const response = await fetch(`${this.baseURL}/data/sync`, {
                 method: 'GET',
                 headers: {
@@ -144,14 +218,25 @@ class APIService {
             });
 
             const result = await response.json();
+            console.log('📡 Server response:', response.status, result);
             
-            if (response.ok && result.data) {
-                // Merge server data with local data
-                const localData = Storage.get();
-                const mergedData = this.mergeData(localData, result.data);
+            if (response.ok) {
+                console.log('🔍 Checking server data:', {
+                    hasData: !!result.data,
+                    dataKeys: result.data ? Object.keys(result.data) : [],
+                    dataKeysLength: result.data ? Object.keys(result.data).length : 0
+                });
                 
-                // Save merged data to localStorage
-                Storage.set(mergedData);
+                if (result.data && Object.keys(result.data).length > 0) {
+                    // User has data on server - use server data
+                    console.log('📥 Loading user data from server:', result.data);
+                    console.log('📥 Setting data to Storage...');
+                    Storage.set(result.data);
+                    console.log('✅ Data set to Storage successfully');
+                } else {
+                    // No data on server - user is starting fresh, keep empty structure
+                    console.log('📭 No server data found - user starting fresh');
+                }
                 
                 console.log('✅ Data synced from server successfully');
                 localStorage.setItem('last_sync', new Date().toISOString());

@@ -1,18 +1,9 @@
 const DATA_CONFIG = {
     supplementSchedule: [
-        // No hardcoded supplements - users can add their own via the UI
+        // No default supplements - users start fresh
     ],
     mealPlan: [
-        {
-            time: "10:00",
-            meal: "Breakfast",
-            food: "Eggs, bacon, avocado, spinach"
-        },
-        {
-            time: "18:00",
-            meal: "Dinner", 
-            food: "Steak, zucchini noodles, butter, salad"
-        }
+        // No default meals - users start fresh
     ],
     workoutPlan: [
         { day: "Monday", focus: "Push (Chest, Shoulders, Triceps)" },
@@ -166,14 +157,15 @@ class GainsDataManager {
             meal.date === today
         );
         
-        // Get meal plan and mark which meals have been logged
-        const mealPlan = DATA_CONFIG.mealPlan.map(plannedMeal => ({
-            ...plannedMeal,
-            logged: todayMeals.some(meal => meal.type === plannedMeal.meal),
-            loggedMeal: todayMeals.find(meal => meal.type === plannedMeal.meal)
+        // Return only meals that have been actually logged by the user
+        // No default meal plan - users start fresh
+        return todayMeals.map(meal => ({
+            time: meal.time,
+            meal: meal.type,
+            food: meal.description,
+            logged: true,
+            loggedMeal: meal
         }));
-        
-        return mealPlan;
     }
 
     getMealHistory(filter = 'all') {

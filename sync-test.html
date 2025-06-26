@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Sync Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .button:hover { background: #0056b3; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Data Sync Test</h1>
+    <p>This test will verify if data sync to/from server is working correctly.</p>
+    
+    <div>
+        <h3>Step 1: Login as test user</h3>
+        <button class="button" onclick="loginTestUser()">Login Test User</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div>
+        <h3>Step 2: Check what data server has for this user</h3>
+        <button class="button" onclick="checkServerData()">Get Server Data</button>
+        <div id="server-data-result"></div>
+    </div>
+    
+    <div>
+        <h3>Step 3: Add some test data locally</h3>
+        <button class="button" onclick="addLocalTestData()">Add Local Test Data</button>
+        <div id="local-data-result"></div>
+    </div>
+    
+    <div>
+        <h3>Step 4: Sync local data to server</h3>
+        <button class="button" onclick="syncToServer()">Sync TO Server</button>
+        <div id="sync-to-result"></div>
+    </div>
+    
+    <div>
+        <h3>Step 5: Clear local data and sync from server</h3>
+        <button class="button" onclick="testSyncFromServer()">Clear Local & Sync FROM Server</button>
+        <div id="sync-from-result"></div>
+    </div>
+
+    <script>
+        let currentToken = null;
+        
+        async function loginTestUser() {
+            const result = document.getElementById('login-result');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    currentToken = data.token;
+                    result.innerHTML = `<div class="success">✅ User logged in: ${data.user.email}</div>`;
+                } else {
+                    result.innerHTML = `<div class="error">❌ Login failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkServerData() {
+            const result = document.getElementById('server-data-result');
+            if (!currentToken) {
+                result.innerHTML = '<div class="error">❌ Please login first</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/data/sync', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    result.innerHTML = `<div class="success">✅ Server data retrieved:</div><pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+                } else {
+                    result.innerHTML = `<div class="error">❌ Failed to get server data: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function addLocalTestData() {
+            const result = document.getElementById('local-data-result');
+            
+            const testData = {
+                workoutHistory: [
+                    {
+                        id: Date.now().toString(),
+                        type: 'TEST WORKOUT',
+                        date: new Date().toISOString().split('T')[0],
+                        duration: 30,
+                        exercises: 'Test Exercise',
+                        notes: 'This is a test workout',
+                        timestamp: new Date().toISOString()
+                    }
+                ],
+                mealHistory: [
+                    {
+                        id: Date.now().toString() + '_meal',
+                        type: 'TEST MEAL',
+                        date: new Date().toISOString().split('T')[0],
+                        food: 'Test Food',
+                        calories: 500,
+                        notes: 'This is a test meal',
+                        timestamp: new Date().toISOString()
+                    }
+                ],
+                customSupplements: [
+                    {
+                        id: Date.now().toString() + '_supp',
+                        name: 'TEST SUPPLEMENT',
+                        dosage: '1 tablet',
+                        time: '08:00',
+                        taken: false,
+                        isCustom: true
+                    }
+                ]
+            };
+            
+            localStorage.setItem('gainsData', JSON.stringify(testData));
+            result.innerHTML = '<div class="success">✅ Test data added to localStorage</div>';
+        }
+        
+        async function syncToServer() {
+            const result = document.getElementById('sync-to-result');
+            if (!currentToken) {
+                result.innerHTML = '<div class="error">❌ Please login first</div>';
+                return;
+            }
+            
+            try {
+                const localData = JSON.parse(localStorage.getItem('gainsData') || '{}');
+                
+                const response = await fetch('http://localhost:3000/api/data/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ data: localData })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    result.innerHTML = `<div class="success">✅ Data synced to server successfully</div>`;
+                } else {
+                    result.innerHTML = `<div class="error">❌ Sync to server failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testSyncFromServer() {
+            const result = document.getElementById('sync-from-result');
+            if (!currentToken) {
+                result.innerHTML = '<div class="error">❌ Please login first</div>';
+                return;
+            }
+            
+            try {
+                // First clear local data
+                localStorage.removeItem('gainsData');
+                
+                // Then sync from server
+                const response = await fetch('http://localhost:3000/api/data/sync', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.data && Object.keys(data.data).length > 0) {
+                        localStorage.setItem('gainsData', JSON.stringify(data.data));
+                        result.innerHTML = `<div class="success">✅ Data synced from server and restored to localStorage:</div><pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+                    } else {
+                        result.innerHTML = '<div class="info">ℹ️ No data found on server - user starting fresh</div>';
+                    }
+                } else {
+                    result.innerHTML = `<div class="error">❌ Sync from server failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

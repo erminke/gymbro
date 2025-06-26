@@ -21,19 +21,40 @@ function displayUserInfo(user) {
 }
 
 function logout() {
-    // Clear authentication data
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
+    console.log('🚪 Logout function called');
     
-    // Show notification
-    if (window.app && window.app.ui) {
-        window.app.ui.showNotification('Logged out successfully!', 'success');
-    }
-    
-    // Redirect to login page
-    setTimeout(() => {
+    try {
+        // Use API service to logout (clears all data)
+        if (window.api) {
+            console.log('Using API service logout');
+            window.api.logout();
+        } else {
+            console.log('API service not available, manual cleanup');
+            // Fallback manual cleanup
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            localStorage.removeItem('last_sync');
+            
+            // Clear all other data
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => localStorage.removeItem(key));
+        }
+        
+        // Show notification
+        if (window.app && window.app.ui) {
+            window.app.ui.showNotification('Logged out successfully!', 'success');
+        }
+        
+        console.log('✅ Logout completed, redirecting...');
+        
+        // Redirect to login page immediately
         window.location.href = 'login.html';
-    }, 1000);
+        
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Force redirect even if there's an error
+        window.location.href = 'login.html';
+    }
 }
 
 async function manualSync() {

@@ -44,10 +44,14 @@
                 // Token is valid, show the app
                 document.getElementById('app-container').style.display = 'block';
                 
+                // Set a flag to indicate user is authenticated and data should be loaded
+                window.userAuthenticated = true;
+                
             } catch (error) {
                 // Invalid token, clear storage and redirect
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_data');
+                localStorage.removeItem('last_sync');
                 window.location.href = 'login.html';
             }
         })();
@@ -754,11 +758,64 @@
     <script src="js/main.js"></script>
     <script>
         // Initialize the app when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM loaded, initializing app...');
+            console.log('🔍 Auth check - userAuthenticated:', window.userAuthenticated);
+            console.log('🔍 API check - window.api available:', !!window.api);
+            
+            // Create the app first
             window.app = new GainsApp();
+            
+            // Ensure API is available and user is authenticated
+            if (window.userAuthenticated && window.api) {
+                console.log('✅ Both auth and API available - starting data sync...');
+                try {
+                    // Sync data from server
+                    await window.api.syncFromServer();
+                    console.log('✅ Data sync completed successfully');
+                    
+                    // Force the data manager to refresh from storage after sync
+                    console.log('🔄 Refreshing data manager after sync...');
+                    window.app.data.refreshDataFromStorage();
+                    
+                } catch (error) {
+                    console.error('❌ Error during data sync:', error);
+                }
+            } else {
+                console.log('⚠️ Skipping sync - Auth:', window.userAuthenticated, 'API:', !!window.api);
+            }
+            
+            // Initialize the app AFTER data is loaded
+            console.log('🔄 Initializing app UI...');
             window.app.init();
+            
+            // Update user info in sidebar
+            if (window.userAuthenticated && window.api) {
+                const user = window.api.getUser();
+                if (user) {
+                    updateUserInfo(user);
+                }
+            }
+            
+            // Force refresh the UI to show the loaded data
+            if (window.app && window.userAuthenticated) {
+                console.log('🔄 Force refreshing UI for user-specific data...');
+                window.app.refreshAllPages();
+            }
         });
+        
+        // Function to update user info in sidebar
+        function updateUserInfo(user) {
+            const userNameEl = document.getElementById('userName');
+            const userEmailEl = document.getElementById('userEmail');
+            
+            if (userNameEl && user.name) {
+                userNameEl.textContent = user.name;
+            }
+            if (userEmailEl && user.email) {
+                userEmailEl.textContent = user.email;
+            }
+        }
     </script>
 </body>
 </html>
