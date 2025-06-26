@@ -1,0 +1,27 @@
+# Gymbro .gitignore
+
+# Development files
+*.log
+*.tmp
+.DS_Store
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (if you add any)
+node_modules/
+
+# Build files (if you add a build process)
+dist/
+build/
+
+# Temporary files
+temp/
+tmp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db

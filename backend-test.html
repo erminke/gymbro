@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gymbro API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        .test-section { margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; }
+        input { margin: 0.25rem; padding: 0.5rem; }
+        #log { background: #f8f9fa; padding: 1rem; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🏋️ Gymbro Backend Test</h1>
+    
+    <div class="test-section">
+        <h3>🔍 Server Status</h3>
+        <button onclick="testHealth()">Test Health Check</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>👤 Authentication Test</h3>
+        <div>
+            <input type="email" id="testEmail" placeholder="Email" value="test@example.com">
+            <input type="password" id="testPassword" placeholder="Password" value="password123">
+            <input type="text" id="testName" placeholder="Name (optional)" value="Test User">
+        </div>
+        <div>
+            <button onclick="testRegister()">Test Register</button>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testVerify()">Verify Token</button>
+        </div>
+        <div id="authResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>💾 Data Sync Test</h3>
+        <button onclick="testSyncData()">Test Data Sync</button>
+        <button onclick="testGetData()">Get Data</button>
+        <div id="syncResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>📋 API Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = localStorage.getItem('test_token');
+
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.textContent += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        async function testHealth() {
+            try {
+                log('Testing health check...');
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                document.getElementById('healthResult').innerHTML = response.ok 
+                    ? `<div class="success">✅ Server is running! Status: ${data.status}</div>`
+                    : `<div class="error">❌ Health check failed</div>`;
+                
+                log(`Health check: ${JSON.stringify(data)}`);
+            } catch (error) {
+                document.getElementById('healthResult').innerHTML = 
+                    `<div class="error">❌ Cannot connect to server. Is it running on port 3000?</div>`;
+                log(`Health check error: ${error.message}`);
+            }
+        }
+
+        async function testRegister() {
+            try {
+                const email = document.getElementById('testEmail').value;
+                const password = document.getElementById('testPassword').value;
+                const name = document.getElementById('testName').value;
+
+                log(`Registering user: ${email}`);
+                
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('test_token', authToken);
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="success">✅ Registration successful! User ID: ${data.user.id}</div>`;
+                    log(`Registration success: ${JSON.stringify(data.user)}`);
+                } else {
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="error">❌ Registration failed: ${data.error}</div>`;
+                    log(`Registration error: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Registration error: ${error.message}`);
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const email = document.getElementById('testEmail').value;
+                const password = document.getElementById('testPassword').value;
+
+                log(`Logging in user: ${email}`);
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('test_token', authToken);
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="success">✅ Login successful! Welcome ${data.user.name || data.user.email}</div>`;
+                    log(`Login success: ${JSON.stringify(data.user)}`);
+                } else {
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="error">❌ Login failed: ${data.error}</div>`;
+                    log(`Login error: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Login error: ${error.message}`);
+            }
+        }
+
+        async function testVerify() {
+            if (!authToken) {
+                document.getElementById('authResult').innerHTML = 
+                    `<div class="error">❌ No token found. Please login first.</div>`;
+                return;
+            }
+
+            try {
+                log('Verifying token...');
+                
+                const response = await fetch(`${API_BASE}/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="success">✅ Token is valid! User: ${data.user.email}</div>`;
+                    log(`Token verification success: ${JSON.stringify(data.user)}`);
+                } else {
+                    document.getElementById('authResult').innerHTML = 
+                        `<div class="error">❌ Token verification failed: ${data.error}</div>`;
+                    log(`Token verification error: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Token verification error: ${error.message}`);
+            }
+        }
+
+        async function testSyncData() {
+            if (!authToken) {
+                document.getElementById('syncResult').innerHTML = 
+                    `<div class="error">❌ Please login first</div>`;
+                return;
+            }
+
+            try {
+                log('Testing data sync...');
+                
+                const testData = {
+                    workoutHistory: [
+                        { id: 1, type: 'Push', date: new Date().toISOString(), duration: 45 }
+                    ],
+                    supplementTracking: {
+                        [new Date().toISOString().split('T')[0]]: {
+                            'protein': true,
+                            'creatine': false
+                        }
+                    }
+                };
+
+                const response = await fetch(`${API_BASE}/data/sync`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}` 
+                    },
+                    body: JSON.stringify({ data: testData })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('syncResult').innerHTML = 
+                        `<div class="success">✅ Data sync successful!</div>`;
+                    log(`Data sync success: ${JSON.stringify(result)}`);
+                } else {
+                    document.getElementById('syncResult').innerHTML = 
+                        `<div class="error">❌ Data sync failed: ${result.error}</div>`;
+                    log(`Data sync error: ${result.error}`);
+                }
+            } catch (error) {
+                log(`Data sync error: ${error.message}`);
+            }
+        }
+
+        async function testGetData() {
+            if (!authToken) {
+                document.getElementById('syncResult').innerHTML = 
+                    `<div class="error">❌ Please login first</div>`;
+                return;
+            }
+
+            try {
+                log('Getting synced data...');
+                
+                const response = await fetch(`${API_BASE}/data/sync`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('syncResult').innerHTML = 
+                        `<div class="success">✅ Data retrieved! Check log for details.</div>`;
+                    log(`Retrieved data: ${JSON.stringify(result.data, null, 2)}`);
+                } else {
+                    document.getElementById('syncResult').innerHTML = 
+                        `<div class="error">❌ Get data failed: ${result.error}</div>`;
+                    log(`Get data error: ${result.error}`);
+                }
+            } catch (error) {
+                log(`Get data error: ${error.message}`);
+            }
+        }
+
+        // Auto-test health on load
+        window.addEventListener('load', testHealth);
+    </script>
+</body>
+</html>

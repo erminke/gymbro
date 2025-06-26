@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Menu Test</title>
+    <style>
+        /* Basic styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1e293b;
+            color: white;
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .mobile-menu-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+        }
+        
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .sidebar-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+        
+        /* Desktop styles */
+        @media (min-width: 769px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 280px;
+            }
+            
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <nav class="sidebar" id="sidebar">
+        <div style="padding: 20px;">
+            <h1>💪 Menu</h1>
+            <ul style="list-style: none; padding-top: 20px;">
+                <li><a href="#" style="color: white; text-decoration: none; display: block; padding: 10px;">Dashboard</a></li>
+                <li><a href="#" style="color: white; text-decoration: none; display: block; padding: 10px;">Workouts</a></li>
+                <li><a href="#" style="color: white; text-decoration: none; display: block; padding: 10px;">Supplements</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            ☰ Menu
+        </button>
+        
+        <h1>Mobile Menu Test</h1>
+        <p>This is a test page to verify mobile menu functionality.</p>
+        <p>On mobile devices (width < 768px), the sidebar should be hidden by default and show when clicking the menu button.</p>
+        <p>On desktop, the sidebar should always be visible and the menu button should be hidden.</p>
+    </main>
+
+    <script>
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        
+        function toggleSidebar() {
+            console.log('Toggle sidebar called');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            console.log('Sidebar classes:', sidebar.className);
+            console.log('Overlay classes:', overlay.className);
+        }
+        
+        function closeSidebar() {
+            console.log('Close sidebar called');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                console.log('Mobile menu button clicked');
+                toggleSidebar();
+            });
+        }
+        
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                console.log('Overlay clicked');
+                closeSidebar();
+            });
+        }
+        
+        console.log('Test script loaded');
+        console.log('Mobile menu button:', mobileMenuBtn);
+        console.log('Sidebar:', sidebar);
+        console.log('Overlay:', overlay);
+    </script>
+</body>
+</html>

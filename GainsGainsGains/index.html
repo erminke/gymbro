@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gymbro - Fitness Tracker</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Authentication Check -->
+    <script>
+        // Check authentication before loading the app
+        (async function() {
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                // No token, redirect to login
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                // Verify token with server
+                const response = await fetch('http://localhost:3000/api/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Invalid token');
+                }
+                
+                const data = await response.json();
+                if (!data.valid) {
+                    throw new Error('Token not valid');
+                }
+                
+                // Token is valid, show the app
+                document.getElementById('app-container').style.display = 'block';
+                
+            } catch (error) {
+                // Invalid token, clear storage and redirect
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+    
+    <div class="app-container" id="app-container" style="display: none;">
+        <!-- Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo">💪 Gymbro</h1>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="workouts">
+                        <i class="fas fa-dumbbell"></i>
+                        <span>Workouts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="supplements">
+                        <i class="fas fa-pills"></i>
+                        <span>Supplements</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="meals">
+                        <i class="fas fa-utensils"></i>
+                        <span>Meals</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="progress">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Progress</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- User Section -->
+            <div class="auth-section" id="authSection">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-email" id="userEmail">Loading...</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm sync-btn" onclick="manualSync()" id="syncBtn">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                    <button class="btn btn-sm logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="window.app.toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 class="page-title" id="pageTitle">Dashboard</h2>
+                </div>
+                <div class="header-right">
+                    <div class="date-display">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- Dashboard Page -->
+                <section id="dashboard-page" class="page active">
+                    <div class="dashboard-grid">
+                        <!-- Today's Overview -->
+                        <div class="card today-overview">
+                            <div class="card-header">
+                                <h3>Today's Overview</h3>
+                                <div class="date-nav">
+                                    <button class="btn-icon" id="prevDay">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span id="selectedDate"></span>
+                                    <button class="btn-icon" id="nextDay">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="overview-stats">
+                                <div class="stat-item">
+                                    <div class="stat-icon workout">
+                                        <i class="fas fa-dumbbell"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-label">Today's Workout</span>
+                                        <span class="stat-value" id="todayWorkout">Push Day</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon supplements">
+                                        <i class="fas fa-pills"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-label">Supplements</span>
+                                        <span class="stat-value" id="supplementsProgress">0/0 taken</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon meals">
+                                        <i class="fas fa-utensils"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-label">Meals</span>
+                                        <span class="stat-value" id="mealsProgress">2/4 logged</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon weight">
+                                        <i class="fas fa-weight"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-label">Current BMI</span>
+                                        <span class="stat-value" id="dashboardBMI">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card quick-actions full-width">
+                            <div class="card-header">
+                                <h3>Quick Actions</h3>
+                            </div>
+                            <div class="actions-grid">
+                                <button class="action-btn" id="quickWorkout">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Log Workout</span>
+                                </button>
+                                <button class="action-btn" id="quickMeal">
+                                    <i class="fas fa-utensils"></i>
+                                    <span>Log Meal</span>
+                                </button>
+                                <button class="action-btn" id="quickProgress">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>View Progress</span>
+                                </button>
+                                <button class="action-btn" id="quickWeight">
+                                    <i class="fas fa-weight"></i>
+                                    <span>Log Weight</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Today's Schedule -->
+                        <div class="card today-schedule full-width">
+                            <div class="card-header">
+                                <h3>Today's Schedule</h3>
+                            </div>
+                            <div class="schedule-content" id="todaySchedule">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="card recent-activity">
+                            <div class="card-header">
+                                <h3>Recent Activity</h3>
+                            </div>
+                            <div class="activity-list" id="recentActivity">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Workouts Page -->
+                <section id="workouts-page" class="page">
+                    <div class="page-header">
+                        <h2>Workout Tracker</h2>
+                        <button class="btn-primary" id="addWorkoutBtn">
+                            <i class="fas fa-plus"></i>
+                            Log Workout
+                        </button>
+                    </div>
+                    
+                    <div class="workouts-grid">
+                        <div class="card workout-schedule full-width">
+                            <div class="card-header">
+                                <h3>Weekly Workout Plan</h3>
+                            </div>
+                            <div class="workout-plan-grid" id="workoutPlan">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="card workout-history full-width">
+                            <div class="card-header">
+                                <h3>Workout History</h3>
+                                <div class="filter-controls">
+                                    <select id="workoutFilter">
+                                        <option value="all">All Workouts</option>
+                                        <option value="push">Push</option>
+                                        <option value="pull">Pull</option>
+                                        <option value="legs">Legs</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="workout-history-list" id="workoutHistoryList">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Supplements Page -->
+                <section id="supplements-page" class="page">
+                    <div class="page-header">
+                        <h2>Supplement Tracker</h2>
+                        <button class="btn-primary" id="addSupplementBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Supplement
+                        </button>
+                    </div>
+                    
+                    <div class="supplements-grid">
+                        <div class="card daily-supplements full-width">
+                            <div class="card-header">
+                                <h3>Today's Supplement Schedule</h3>
+                                <div class="progress-ring" id="supplementProgress">
+                                    <div class="progress-text">0/8</div>
+                                </div>
+                            </div>
+                            <div class="supplement-schedule" id="supplementSchedule">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="card weekly-supplements full-width">
+                            <div class="card-header">
+                                <h3>Weekly Progress</h3>
+                            </div>
+                            <div class="weekly-supplement-grid" id="weeklySupplementGrid">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Meals Page -->
+                <section id="meals-page" class="page">
+                    <div class="page-header">
+                        <h2>Meal Tracker</h2>
+                        <button class="btn-primary" id="addMealBtn">
+                            <i class="fas fa-plus"></i>
+                            Log Meal
+                        </button>
+                    </div>
+                    
+                    <div class="meals-grid">
+                        <div class="card meal-history full-width">
+                            <div class="card-header">
+                                <h3>Meal History</h3>
+                            </div>
+                            <div class="meal-timeline" id="mealHistoryList">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Progress Page -->
+                <section id="progress-page" class="page">
+                    <div class="page-header">
+                        <h2>Progress Tracking</h2>
+                        <div class="progress-controls">
+                            <select id="progressTimeframe">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="3months">Last 3 Months</option>
+                                <option value="year">Last Year</option>
+                                <option value="all">Entire History</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-grid">
+                        <div class="card progress-charts full-width">
+                            <div class="card-header">
+                                <h3>Progress Charts</h3>
+                            </div>
+                            <div class="charts-container" id="progressCharts">
+                                <!-- Charts will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="card progress-stats full-width">
+                            <div class="card-header">
+                                <h3>Statistics</h3>
+                            </div>
+                            <div class="stats-grid" id="progressStats">
+                                <!-- Stats will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <!-- Weight Tracking Section -->
+                        <div class="card weight-tracking-card full-width">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-weight"></i>
+                                    Weight Tracking & BMI
+                                </h3>
+                            </div>
+                            <div class="weight-tracking-content">
+                                <div class="weight-tracking-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="userHeight">Height (cm)</label>
+                                            <input type="number" id="userHeight" min="100" max="250" placeholder="e.g., 175">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="currentWeight">Current Weight (kg)</label>
+                                            <input type="number" id="currentWeight" step="0.1" min="30" max="300" placeholder="e.g., 70.5">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="targetWeight">Target Weight (kg)</label>
+                                            <input type="number" id="targetWeight" step="0.1" min="30" max="300" placeholder="e.g., 75.0">
+                                        </div>
+                                        <div class="form-group">
+                                            <button type="button" class="btn-primary" id="saveWeightDataBtn">
+                                                <i class="fas fa-save"></i>
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="weight-stats" id="weightStats">
+                                    <div class="stat-item">
+                                        <div class="stat-label">Current BMI</div>
+                                        <div class="stat-value" id="currentBMI">--</div>
+                                        <div class="stat-category" id="bmiCategory">Enter your data</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-label">Progress to Target</div>
+                                        <div class="stat-value" id="weightProgress">--</div>
+                                        <div class="stat-category" id="progressDirection">--</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-label">Target BMI</div>
+                                        <div class="stat-value" id="targetBMI">--</div>
+                                        <div class="stat-category" id="targetBmiCategory">--</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="weight-history">
+                                    <h4>Weight Log</h4>
+                                    <div class="weight-log-form">
+                                        <input type="date" id="weightLogDate">
+                                        <input type="number" id="weightLogValue" step="0.1" placeholder="Weight (kg)">
+                                        <button type="button" class="btn-secondary" id="addWeightLogBtn">
+                                            <i class="fas fa-plus"></i>
+                                            Add Entry
+                                        </button>
+                                    </div>
+                                    <div class="weight-log-list" id="weightLogList">
+                                        <!-- Weight log entries will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Page -->
+                <section id="settings-page" class="page">
+                    <div class="page-header">
+                        <h2>Settings</h2>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Data Management</h3>
+                            </div>
+                            <div class="settings-section">
+                                <button class="btn-secondary" id="exportDataBtn">
+                                    <i class="fas fa-download"></i>
+                                    Export Data
+                                </button>
+                                <button class="btn-secondary" id="importDataBtn">
+                                    <i class="fas fa-upload"></i>
+                                    Import Data
+                                </button>
+                                <button class="btn-danger" id="clearDataBtn">
+                                    <i class="fas fa-trash"></i>
+                                    Clear All Data
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Preferences</h3>
+                            </div>
+                            <div class="settings-section">
+                                <div class="setting-item">
+                                    <label for="startWeekOn">Start week on:</label>
+                                    <select id="startWeekOn">
+                                        <option value="monday">Monday</option>
+                                        <option value="sunday">Sunday</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label for="notifications">Enable notifications:</label>
+                                    <input type="checkbox" id="notifications" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="workoutModal">
+            <div class="modal-header">
+                <h3>Log Workout</h3>
+                <button class="modal-close" data-modal="workoutModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="workoutForm">
+                    <div class="form-group">
+                        <label for="workoutType">Workout Type</label>
+                        <select id="workoutType" name="type" required>
+                            <option value="">Select workout type</option>
+                            <option value="Push (Chest, Shoulders, Triceps)">Push (Chest, Shoulders, Triceps)</option>
+                            <option value="Pull (Back, Biceps)">Pull (Back, Biceps)</option>
+                            <option value="Legs (Quads, Hamstrings, Glutes)">Legs (Quads, Hamstrings, Glutes)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="workoutDate">Date</label>
+                        <input type="date" id="workoutDate" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="workoutDuration">Duration (minutes)</label>
+                        <input type="number" id="workoutDuration" name="duration" min="1" max="300" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="workoutExercises">Exercises</label>
+                        <textarea id="workoutExercises" name="exercises" rows="2" placeholder="List exercises performed"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="workoutNotes">Notes</label>
+                        <textarea id="workoutNotes" name="notes" rows="3" placeholder="How did the workout go?"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="workoutModal">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Workout</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal" id="mealModal">
+            <div class="modal-header">
+                <h3>Log Meal</h3>
+                <button class="modal-close" data-modal="mealModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="mealForm">
+                    <div class="form-group">
+                        <label for="mealType">Meal Type</label>
+                        <input type="text" id="mealType" name="type" placeholder="e.g., Breakfast, Lunch, Snack" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mealTime">Time (optional)</label>
+                        <input type="time" id="mealTime" name="time" placeholder="e.g., 12:30">
+                    </div>
+                    <div class="form-group">
+                        <label for="mealDate">Date</label>
+                        <input type="date" id="mealDate" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mealDescription">Meal Description</label>
+                        <textarea id="mealDescription" name="food" rows="3" placeholder="What did you eat?" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="mealCalories">Calories (optional)</label>
+                        <input type="number" id="mealCalories" name="calories" min="0" placeholder="Estimated calories">
+                    </div>
+                    <div class="form-group">
+                        <label for="mealNotes">Notes</label>
+                        <textarea id="mealNotes" name="notes" rows="2" placeholder="Additional notes"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="mealModal">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Meal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal" id="supplementModal">
+            <div class="modal-header">
+                <h3>Add New Supplement</h3>
+                <button class="modal-close" data-modal="supplementModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addSupplementForm">
+                    <div class="form-group">
+                        <label for="supplementName">Supplement Name</label>
+                        <input type="text" id="supplementName" name="name" placeholder="e.g., Vitamin D3" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplementDosage">Dosage</label>
+                        <input type="text" id="supplementDosage" name="dosage" placeholder="e.g., 5000 IU">
+                    </div>
+                    <div class="form-group">
+                        <label for="supplementTime">Time</label>
+                        <input type="time" id="supplementTime" name="time">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="supplementModal">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Supplement</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Workout Edit Modal -->
+        <div class="modal" id="workoutEditModal">
+            <div class="modal-header">
+                <h3>Edit Workout Plan</h3>
+                <button class="modal-close" data-modal="workoutEditModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="workoutEditForm">
+                    <div class="form-group">
+                        <label for="editWorkoutDay">Day</label>
+                        <input type="text" id="editWorkoutDay" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editWorkoutType">Workout Type</label>
+                        <div class="workout-type-options">
+                            <div class="preset-options">
+                                <label>Preset Options:</label>
+                                <div class="radio-group">
+                                    <label class="radio-option">
+                                        <input type="radio" name="workoutTypeOption" value="preset" checked>
+                                        <span class="radio-text">Use Preset</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="workoutTypeOption" value="custom">
+                                        <span class="radio-text">Custom</span>
+                                    </label>
+                                </div>
+                                <select id="presetWorkoutSelect" name="presetType">
+                                    <option value="Push (Chest, Shoulders, Triceps)">Push (Chest, Shoulders, Triceps)</option>
+                                    <option value="Pull (Back, Biceps)">Pull (Back, Biceps)</option>
+                                    <option value="Legs (Quads, Hamstrings, Glutes)">Legs (Quads, Hamstrings, Glutes)</option>
+                                    <option value="Full Body">Full Body</option>
+                                    <option value="Upper Body">Upper Body</option>
+                                    <option value="Lower Body">Lower Body</option>
+                                    <option value="Cardio">Cardio</option>
+                                    <option value="Rest / Recovery">Rest / Recovery</option>
+                                </select>
+                            </div>
+                            <div class="custom-input-group" style="display: none;">
+                                <label for="customWorkoutInput">Custom Workout:</label>
+                                <input type="text" id="customWorkoutInput" name="customType" placeholder="Enter your custom workout plan">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="workoutEditModal">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Exercise Modal -->
+        <div class="modal" id="exerciseModal">
+            <div class="modal-header">
+                <h3>Add Exercise</h3>
+                <button class="modal-close" data-modal="exerciseModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="exerciseForm">
+                    <div class="form-group">
+                        <label for="exerciseName">Exercise Name</label>
+                        <input type="text" id="exerciseName" name="name" required placeholder="e.g., Barbell Bench Press">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="exerciseSets">Sets</label>
+                            <input type="text" id="exerciseSets" name="sets" placeholder="e.g., 3, 4-5">
+                        </div>
+                        <div class="form-group">
+                            <label for="exerciseReps">Reps</label>
+                            <input type="text" id="exerciseReps" name="reps" placeholder="e.g., 8-12, 5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="exerciseWeight">Weight/Resistance</label>
+                        <input type="text" id="exerciseWeight" name="weight" placeholder="e.g., 135 lbs, Bodyweight, 15kg">
+                    </div>
+                    <div class="form-group">
+                        <label for="exerciseNotes">Notes</label>
+                        <textarea id="exerciseNotes" name="notes" rows="2" placeholder="Form cues, rest time, etc."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="exerciseModal">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Exercise</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="authModalTitle">Login</h3>
+                <button class="modal-close" data-modal="authModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="authForm">
+                    <div class="form-group">
+                        <label for="authEmail">Email</label>
+                        <input type="email" id="authEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="authPassword">Password</label>
+                        <input type="password" id="authPassword" name="password" required minlength="6">
+                    </div>
+                    <div class="form-group" id="nameGroup" style="display: none;">
+                        <label for="authName">Name (optional)</label>
+                        <input type="text" id="authName" name="name">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-cancel" data-modal="authModal">Cancel</button>
+                        <button type="submit" class="btn-primary" id="authSubmitBtn">Login</button>
+                    </div>
+                </form>
+                <div class="auth-switch">
+                    <button type="button" class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()">
+                        Don't have an account? Register
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load dependencies in correct order -->
+    <script>
+        console.log('🚀 Loading scripts...');
+    </script>
+    <script src="js/storage.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing app...');
+            window.app = new GainsApp();
+            window.app.init();
+        });
+    </script>
+</body>
+</html>

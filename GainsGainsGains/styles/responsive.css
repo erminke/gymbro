@@ -1,0 +1,693 @@
+/* Responsive Design */
+
+/* Large screens */
+@media (min-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .today-overview {
+        grid-column: span 2;
+    }
+    
+    .content-wrapper {
+        padding: var(--space-2xl);
+    }
+}
+
+/* Medium screens */
+@media (max-width: 1024px) {
+    .dashboard-grid,
+    .workouts-grid,
+    .supplements-grid,
+    .meals-grid,
+    .progress-grid,
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .today-overview {
+        grid-column: span 1;
+    }
+    
+    .overview-stats {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .schedule-grid,
+    .workout-plan-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-xs);
+    }
+    
+    .weekly-header,
+    .supplement-row {
+        grid-template-columns: 120px repeat(7, 1fr);
+    }
+    
+    .weight-tracking-form .form-row {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .weight-log-form {
+        grid-template-columns: 1fr 1fr auto;
+    }
+    
+    /* Additional full-width component enhancements */
+    /* Ensure all cards are full width on medium screens */
+    .card,
+    .progress-charts,
+    .progress-stats,
+    .weight-tracking-card {
+        width: 100%;
+    }
+    
+    .charts-container {
+        min-height: 300px;
+    }
+}
+
+/* Large screens - hide sidebar toggle button */
+@media (min-width: 769px) {
+    .sidebar-toggle {
+        display: none;
+    }
+    
+    .mobile-menu-btn {
+        display: none;
+    }
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 100%;
+    }
+    
+    /* Main content already handled in main.css */
+    
+    .content-wrapper {
+        padding: var(--space-md);
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+    
+    .page-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .top-header {
+        padding: 0 var(--space-md);
+    }
+    
+    .header-right {
+        gap: var(--space-sm);
+    }
+    
+    .date-display {
+        display: none;
+    }
+    
+    /* Dashboard adjustments */
+    .overview-stats {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+        padding: var(--space-sm);
+    }
+    
+    .action-btn {
+        padding: var(--space-sm);
+    }
+    
+    .action-btn span {
+        font-size: 0.75rem;
+    }
+    
+    /* Schedule adjustments */
+    .schedule-grid,
+    .workout-plan-grid {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+    
+    .schedule-day,
+    .workout-day {
+        padding: var(--space-sm);
+    }
+    
+    /* Today's Schedule adjustments */
+    .today-schedule .schedule-content {
+        padding: var(--space-md);
+    }
+    
+    .schedule-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        padding: var(--space-sm);
+    }
+    
+    .schedule-item.workout-item {
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    .schedule-time {
+        min-width: auto;
+        text-align: left;
+        font-size: 0.75rem;
+    }
+    
+    .schedule-title {
+        font-size: 0.85rem;
+    }
+    
+    .schedule-description {
+        font-size: 0.75rem;
+    }
+    
+    .schedule-section-title {
+        font-size: 0.8rem;
+    }
+    
+    .schedule-day-name,
+    .workout-day-name {
+        font-size: 0.625rem;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .schedule-day-workout,
+    .workout-day-type {
+        font-size: 0.75rem;
+    }
+    
+    /* Workout history adjustments */
+    .workout-history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .filter-controls {
+        width: 100%;
+    }
+    
+    .filter-controls select {
+        width: 100%;
+    }
+    
+    /* Supplement adjustments */
+    .supplement-controls {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .supplement-time-slot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+        padding: var(--space-md);
+    }
+    
+    .supplement-time {
+        font-size: 0.875rem;
+        min-width: auto;
+        text-align: center;
+        padding: var(--space-xs) var(--space-sm);
+    }
+    
+    .supplement-status {
+        align-self: flex-end;
+        flex-direction: row;
+        align-items: center;
+        margin-left: 0;
+    }
+    
+    /* Workout card adjustments */
+    .workout-card {
+        padding: var(--space-md);
+    }
+    
+    .workout-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-sm);
+    }
+    
+    .workout-actions {
+        flex-direction: column;
+        gap: var(--space-sm);
+        padding-top: var(--space-sm);
+    }
+    
+    .workout-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .supplement-actions {
+        margin-left: 0;
+        margin-top: var(--space-sm);
+        align-self: flex-end;
+    }
+    
+    /* Weekly supplement grid adjustments */
+    .weekly-header,
+    .supplement-row {
+        grid-template-columns: 100px repeat(7, 1fr);
+        gap: 2px;
+    }
+    
+    .supplement-label,
+    .day-header {
+        font-size: 0.75rem;
+        padding: var(--space-xs);
+    }
+    
+    .supplement-cell {
+        padding: var(--space-xs);
+        font-size: 0.75rem;
+    }
+    
+    /* Meal adjustments */
+    .meal-time-slot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+        position: relative;
+    }
+    
+    .meal-time {
+        font-size: 1rem;
+        min-width: auto;
+        text-align: left;
+    }
+    
+    .meal-status {
+        position: absolute;
+        top: var(--space-md);
+        right: var(--space-md);
+    }
+    
+    .meal-actions {
+        margin-left: 0;
+        margin-top: var(--space-sm);
+        align-self: flex-end;
+    }
+    
+    .meal-time-indicator {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-sm);
+        min-width: auto;
+    }
+    
+    /* Progress adjustments */
+    .progress-controls {
+        flex-direction: column;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+    
+    .progress-stat {
+        padding: var(--space-md);
+    }
+    
+    .progress-stat-value {
+        font-size: 1.5rem;
+    }
+    
+    /* Settings adjustments */
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .settings-section {
+        gap: var(--space-sm);
+    }
+    
+    /* Modal adjustments */
+    .modal {
+        width: 95%;
+        margin: var(--space-md);
+    }
+    
+    .modal-header,
+    .modal-body {
+        padding: var(--space-md);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Weight tracking adjustments */
+    .weight-tracking-form {
+        padding: var(--space-md);
+    }
+    
+    .weight-tracking-form .form-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .weight-stats {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .weight-log-form {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .weight-log-form input,
+    .weight-log-form button {
+        width: 100%;
+    }
+    
+    .weight-log-entry {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .weight-log-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    
+    /* Enhanced mobile layouts */
+    .charts-container {
+        min-height: 250px;
+        padding: var(--space-md);
+    }
+    
+    .weight-tracking-form .form-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .form-row .form-group {
+        margin-bottom: var(--space-sm);
+    }
+    
+    /* Mobile responsive styles for workout edit */
+    .workout-day {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .workout-day-content {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+    
+    .edit-workout-btn {
+        align-self: flex-end;
+        margin-left: 0;
+        margin-top: var(--space-xs);
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .workout-type-options {
+        font-size: 0.9rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .content-wrapper {
+        padding: var(--space-sm);
+    }
+    
+    .card {
+        border-radius: var(--radius-md);
+    }
+    
+    .card-header,
+    .overview-stats,
+    .supplement-schedule,
+    .meal-timeline,
+    .workout-history-list,
+    .activity-list,
+    .charts-container,
+    .stats-grid,
+    .settings-section {
+        padding: var(--space-md);
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .schedule-grid,
+    .workout-plan-grid {
+        font-size: 0.75rem;
+    }
+    
+    .weekly-header,
+    .supplement-row {
+        grid-template-columns: 80px repeat(7, 1fr);
+    }
+    
+    .supplement-label,
+    .day-header {
+        font-size: 0.625rem;
+    }
+    
+    .meal-time-slot {
+        padding: var(--space-md);
+    }
+    
+    .stat-item {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--space-sm);
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .mobile-menu-btn,
+    .theme-toggle,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .action-btn,
+    .modal-overlay {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .page {
+        display: block !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+        color: #000;
+        background: #fff;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000;
+        --bg-tertiary: #f0f0f0;
+        --text-secondary: #333;
+    }
+    
+    [data-theme="dark"] {
+        --border-color: #fff;
+        --bg-tertiary: #333;
+        --text-secondary: #ccc;
+    }
+    
+    .card {
+        border-width: 2px;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .modal-overlay,
+    .modal {
+        transition: none;
+    }
+    
+    .page {
+        animation: none;
+    }
+}
+
+/* Focus styles for accessibility */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible,
+.btn-icon:focus-visible,
+.action-btn:focus-visible,
+.nav-link:focus-visible,
+.supplement-checkbox:focus-visible,
+.meal-time-slot:focus-visible,
+.workout-day:focus-visible,
+.schedule-day:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--primary-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty states */
+.empty-state {
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    margin-bottom: var(--space-lg);
+}
+
+/* Enhanced progress chart responsive styles */
+.chart-container {
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+}
+
+.chart-container h4 {
+    font-size: 1.125rem;
+    margin-bottom: var(--space-md);
+    letter-spacing: 0.5px;
+}
+
+.chart-container canvas {
+    height: 350px !important;
+}
+
+/* Enhanced stats grid for mobile */
+.stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    padding: var(--space-md);
+}
+
+.progress-stat-card {
+    padding: var(--space-lg);
+}
+
+.progress-stat-card .stat-value {
+    font-size: 2rem;
+}
+
+.progress-stat-card h4 {
+    font-size: 0.8rem;
+}
