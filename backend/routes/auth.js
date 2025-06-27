@@ -100,8 +100,15 @@ router.get('/verify', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
+    // Decode token and handle both formats: { id } and { userId }
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await db.getUserById(decoded.id);
+    const userId = decoded.id || decoded.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+    
+    const user = await db.getUserById(userId);
     
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });

@@ -61,7 +61,8 @@
                 const data = await response.json();
                 console.log('Auth verify response:', data);
                 
-                if (!data.valid) {
+                // Check if data contains valid field, or if there's a user object (both are valid responses)
+                if (!data.valid && !data.user) {
                     console.error('Token not valid, data:', data);
                     throw new Error('Token not valid');
                 }
