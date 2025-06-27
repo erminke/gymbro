@@ -5,13 +5,22 @@ const fs = require('fs');
 
 class DatabaseManager {
   constructor() {
-    // Ensure database directory exists
-    const dbDir = path.dirname(process.env.DB_PATH || './database/gymbro.db');
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    // For Vercel deployment, use /tmp directory (only writable directory in serverless)
+    // For local development, use ./database/gymbro.db
+    let dbPath;
+    if (process.env.VERCEL) {
+      // In Vercel serverless environment
+      dbPath = '/tmp/gymbro.db';
+    } else {
+      // Local development
+      dbPath = process.env.DB_PATH || './database/gymbro.db';
+      const dbDir = path.dirname(dbPath);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
     }
     
-    this.db = new sqlite3.Database(process.env.DB_PATH || './database/gymbro.db');
+    this.db = new sqlite3.Database(dbPath);
     this.init();
   }
 

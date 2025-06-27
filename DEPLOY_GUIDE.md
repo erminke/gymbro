@@ -20,9 +20,42 @@
    JWT_EXPIRES_IN=7d
    ```
 5. Click "Deploy"
-6. **Copy the deployment URL** (e.g., `https://gymbro-backend-xxx.vercel.app`)
+6. **IMPORTANT**: Copy the deployment URL (e.g., `https://gymbro-backend-abc123.vercel.app`)
 
-### 2. Deploy Frontend to Vercel
+### 2. Update Frontend Configuration
+
+**Choose one of these options:**
+
+#### Option A: Direct URL Update (Easier)
+1. Open `GainsGainsGains/config.js`
+2. Replace the placeholder with your actual backend URL:
+   ```javascript
+   // Replace this line:
+   window.GYMBRO_API_URL = 'https://your-actual-backend-url.vercel.app/api';
+   
+   // With your real URL (example):
+   window.GYMBRO_API_URL = 'https://gymbro-backend-abc123.vercel.app/api';
+   ```
+3. Commit and push:
+   ```bash
+   git add GainsGainsGains/config.js
+   git commit -m "Update API URL for production"
+   git push
+   ```
+
+#### Option B: Environment Variable (More Professional)
+1. When deploying frontend, add this environment variable in Vercel:
+   ```
+   NEXT_PUBLIC_API_URL=https://your-backend-url.vercel.app/api
+   ```
+2. Update `config.js` to use environment variable:
+   ```javascript
+   window.GYMBRO_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fallback-url.vercel.app/api';
+   ```
+
+### 3. Deploy Frontend to Vercel
+
+### 3. Deploy Frontend to Vercel
 
 1. Create another new project in Vercel
 2. Import the same repository: `erminke/gymbro`
@@ -30,21 +63,7 @@
    - **Root Directory**: `GainsGainsGains`
    - **Framework**: Other (Static)
 4. Click "Deploy"
-
-### 3. Connect Frontend to Backend
-
-1. After backend deployment, copy the backend URL
-2. Update `GainsGainsGains/config.js`:
-   ```javascript
-   window.GYMBRO_API_URL = 'https://your-actual-backend-url.vercel.app/api';
-   ```
-3. Commit and push the change:
-   ```bash
-   git add GainsGainsGains/config.js
-   git commit -m "Update API URL for production"
-   git push
-   ```
-4. Vercel will auto-redeploy the frontend
+5. **Done!** Your app is now live with the correct backend connection
 
 ### 4. Test Your App
 
