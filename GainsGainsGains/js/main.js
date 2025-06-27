@@ -4,6 +4,7 @@ class GainsApp {
         this.data = new GainsDataManager(this.storage);
         this.ui = new UIManager(this);
         this.currentPage = 'dashboard';
+        this.navigationTimeout = null; // For debouncing navigation
     }
 
     init() {
@@ -33,17 +34,26 @@ class GainsApp {
     }
 
     navigateToPage(pageId, isInitialLoad = false) {
-        console.log('Navigating to page:', pageId);
-        this.currentPage = pageId;
-        this.ui.renderPage(pageId);
-        
-        // Save current page to localStorage for persistence across page refreshes
-        localStorage.setItem('currentPage', pageId);
-        
-        // Keep URL clean without any hash fragments
-        if (!isInitialLoad) {
-            history.replaceState({ page: pageId }, '', window.location.pathname + window.location.search);
+        // Debounce navigation to prevent double calls
+        if (this.navigationTimeout) {
+            clearTimeout(this.navigationTimeout);
         }
+        
+        this.navigationTimeout = setTimeout(() => {
+            console.log('Navigating to page:', pageId);
+            this.currentPage = pageId;
+            this.ui.renderPage(pageId);
+            
+            // Save current page to localStorage for persistence across page refreshes
+            localStorage.setItem('currentPage', pageId);
+            
+            // Keep URL clean without any hash fragments
+            if (!isInitialLoad) {
+                history.replaceState({ page: pageId }, '', window.location.pathname + window.location.search);
+            }
+            
+            this.navigationTimeout = null;
+        }, isInitialLoad ? 0 : 100); // No delay for initial load, 100ms for user navigation
     }
 
     setupEventListeners() {
@@ -396,6 +406,18 @@ class GainsApp {
                 break;
             case 'save_weight_data':
                 const profile = this.data.updateWeightProfile(params);
+                
+                // Sync to server
+                if (window.api) {
+                    window.api.syncToServer().then(success => {
+                        if (success) {
+                            console.log('📤 Weight profile synced to server');
+                        } else {
+                            console.log('⚠️ Weight profile sync failed, will retry later');
+                        }
+                    });
+                }
+                
                 this.ui.refreshWeightTracking();
                 this.ui.showNotification('Weight data saved successfully!', 'success');
                 break;
@@ -510,6 +532,17 @@ class GainsApp {
     toggleSupplement(supplementId, taken) {
         this.data.toggleSupplement(supplementId, taken);
         
+        // Sync to server
+        if (window.api) {
+            window.api.syncToServer().then(success => {
+                if (success) {
+                    console.log('📤 Supplement tracking synced to server');
+                } else {
+                    console.log('⚠️ Supplement sync failed, will retry later');
+                }
+            });
+        }
+        
         this.ui.showNotification(taken ? 'Supplement marked as taken!' : 'Supplement marked as not taken!', 'success');
         
         // Refresh just supplement-related components for better performance
@@ -552,6 +585,17 @@ class GainsApp {
 
     toggleSupplementForDate(supplementName, date, taken) {
         this.data.toggleSupplementForDate(supplementName, date, taken);
+        
+        // Sync to server
+        if (window.api) {
+            window.api.syncToServer().then(success => {
+                if (success) {
+                    console.log('📤 Supplement tracking synced to server');
+                } else {
+                    console.log('⚠️ Supplement sync failed, will retry later');
+                }
+            });
+        }
         
         // Refresh the weekly grid and progress if we're on supplements page
         const supplementsPage = document.getElementById('supplements-page');

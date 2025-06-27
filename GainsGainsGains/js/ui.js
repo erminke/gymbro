@@ -1785,7 +1785,18 @@ class UIManager {
                     <div class="supplement-label">${supplementName}</div>
                     ${weekDates.map(d => {
                         const dayData = weeklyData[d.date] || {};
-                        const isTaken = dayData[supplementName] || false;
+                        
+                        // Check for supplement tracking by both name and ID
+                        let isTaken = dayData[supplementName] || false;
+                        
+                        // Also check if there's a custom supplement with this name and check by ID
+                        if (!isTaken && this.app.data.data.customSupplements) {
+                            const customSupplement = this.app.data.data.customSupplements.find(s => s.name === supplementName);
+                            if (customSupplement && customSupplement.id) {
+                                isTaken = dayData[customSupplement.id] || false;
+                            }
+                        }
+                        
                         const cellClass = `supplement-cell ${isTaken ? 'taken' : ''} ${d.isToday ? 'today' : ''}`;
                         
                         return `
@@ -1841,16 +1852,30 @@ class UIManager {
                 <canvas id="combinedChartCanvas" width="400" height="300"></canvas>
             `;
             container.appendChild(chartContainer);
-        }
-
-        const canvas = document.getElementById('combinedChartCanvas');
+        }        const canvas = document.getElementById('combinedChartCanvas');
         if (!canvas) return;
         
         const ctx = canvas.getContext('2d');
-        
-        // Destroy existing chart if it exists
+
+        // Destroy existing chart if it exists - be more thorough
         if (this.combinedChart) {
-            this.combinedChart.destroy();
+            try {
+                this.combinedChart.destroy();
+                this.combinedChart = null;
+            } catch (error) {
+                console.warn('Error destroying existing chart:', error);
+                this.combinedChart = null;
+            }
+        }
+        
+        // Also destroy any chart that might be attached to this canvas
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            try {
+                existingChart.destroy();
+            } catch (error) {
+                console.warn('Error destroying chart from canvas:', error);
+            }
         }
         
         // Combine and sort all dates

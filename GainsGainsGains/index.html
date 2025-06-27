@@ -760,7 +760,15 @@
         // Initialize the app when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM loaded, initializing app...');
-            console.log('🔍 Auth check - userAuthenticated:', window.userAuthenticated);
+            
+            // Wait a bit for auth check to complete if needed
+            let authCheckAttempts = 0;
+            while (window.userAuthenticated === undefined && authCheckAttempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                authCheckAttempts++;
+            }
+            
+            console.log('🔍 Final auth check - userAuthenticated:', window.userAuthenticated);
             console.log('🔍 API check - window.api available:', !!window.api);
             
             // Create the app first
