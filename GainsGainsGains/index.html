@@ -42,22 +42,23 @@
                 });
                 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Auth verify failed:', response.status, errorText);
                     throw new Error('Invalid token');
                 }
                 
                 const data = await response.json();
                 if (!data.valid) {
+                    console.error('Auth verify response:', data);
                     throw new Error('Token not valid');
                 }
                 
                 // Token is valid, show the app
                 document.getElementById('app-container').style.display = 'block';
-                
-                // Set a flag to indicate user is authenticated and data should be loaded
                 window.userAuthenticated = true;
-                
             } catch (error) {
                 // Invalid token, clear storage and redirect
+                console.error('Auth check error:', error);
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_data');
                 localStorage.removeItem('last_sync');
