@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debugger - Gymbro</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            padding: 2rem;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .card-title {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+        }
+        
+        .json-data {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 300px;
+            font-family: monospace;
+            margin-top: 1rem;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .action-bar .btn {
+            flex: 1;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gymbro Auth Debugger</h1>
+            <p>This tool helps diagnose authentication issues.</p>
+        </div>
+        
+        <div class="action-bar">
+            <button class="btn" id="checkToken">Check Current Token</button>
+            <button class="btn" id="testAuth">Test Auth API</button>
+            <button class="btn" id="clearToken">Clear Token</button>
+            <button class="btn" id="goToLogin">Go to Login</button>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Current Authentication Status</h2>
+                <span class="status" id="authStatus">Checking...</span>
+            </div>
+            <div id="authDetails">Checking authentication status...</div>
+            
+            <div class="token-section" style="margin-top: 1rem;">
+                <h3>Token</h3>
+                <textarea id="tokenValue" class="token-input" rows="3" placeholder="No token found"></textarea>
+                <div class="action-bar">
+                    <button class="btn" id="updateToken">Update Token</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">API Test Results</h2>
+            </div>
+            <div id="apiResults">Run a test to see results</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">LocalStorage</h2>
+            </div>
+            <div id="localStorage">Loading...</div>
+        </div>
+        
+        <div class="footer">
+            <p>Gymbro Auth Debug Tool | <a href="index.html">Back to App</a></p>
+        </div>
+    </div>
+    
+    <!-- Load scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial checks
+            checkAuthStatus();
+            displayLocalStorage();
+            
+            // Set up event listeners
+            document.getElementById('checkToken').addEventListener('click', checkAuthStatus);
+            document.getElementById('testAuth').addEventListener('click', testAuthentication);
+            document.getElementById('clearToken').addEventListener('click', clearToken);
+            document.getElementById('goToLogin').addEventListener('click', goToLogin);
+            document.getElementById('updateToken').addEventListener('click', updateToken);
+        });
+        
+        function displayLocalStorage() {
+            const storageDiv = document.getElementById('localStorage');
+            const storageData = {};
+            
+            // Get all keys from localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                let value = localStorage.getItem(key);
+                
+                // Try to parse JSON values
+                try {
+                    if (value[0] === '{' || value[0] === '[') {
+                        value = JSON.parse(value);
+                    }
+                } catch (e) {
+                    // Keep as string if not valid JSON
+                }
+                
+                // Mask token value for security
+                if (key === 'auth_token') {
+                    if (typeof value === 'string') {
+                        value = value.substring(0, 15) + '...';
+                    }
+                }
+                
+                storageData[key] = value;
+            }
+            
+            const jsonOutput = JSON.stringify(storageData, null, 2);
+            storageDiv.innerHTML = `<pre class="json-data">${jsonOutput}</pre>`;
+        }
+        
+        function checkAuthStatus() {
+            const statusEl = document.getElementById('authStatus');
+            const detailsEl = document.getElementById('authDetails');
+            const tokenEl = document.getElementById('tokenValue');
+            
+            // Get token
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                statusEl.textContent = 'Not Authenticated';
+                statusEl.className = 'status status-error';
+                detailsEl.innerHTML = '<p>No authentication token found in localStorage.</p>';
+                tokenEl.value = '';
+                return;
+            }
+            
+            // Display token (masked)
+            tokenEl.value = token;
+            
+            // Check if the API instance is available
+            if (!window.api) {
+                statusEl.textContent = 'API Unavailable';
+                statusEl.className = 'status status-warning';
+                detailsEl.innerHTML = '<p>API service is not initialized.</p>';
+                return;
+            }
+            
+            // Check authentication status
+            if (window.api.isAuthenticated()) {
+                statusEl.textContent = 'Authenticated';
+                statusEl.className = 'status status-success';
+                
+                const user = window.api.getUser();
+                
+                if (user) {
+                    detailsEl.innerHTML = `
+                        <p><strong>User ID:</strong> ${user.id}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Name:</strong> ${user.name || 'Not set'}</p>
+                        <p><strong>Token:</strong> ${token.substring(0, 15)}...</p>
+                    `;
+                } else {
+                    detailsEl.innerHTML = `
+                        <p><strong>Status:</strong> Token exists but no user data found</p>
+                        <p><strong>Token:</strong> ${token.substring(0, 15)}...</p>
+                    `;
+                }
+            } else {
+                statusEl.textContent = 'Token Issue';
+                statusEl.className = 'status status-warning';
+                detailsEl.innerHTML = `
+                    <p>Token exists but API service reports not authenticated.</p>
+                    <p>This may indicate the token is not properly loaded in the API service.</p>
+                `;
+            }
+        }
+        
+        async function testAuthentication() {
+            const resultsEl = document.getElementById('apiResults');
+            resultsEl.innerHTML = '<p>Testing authentication with the server...</p>';
+            
+            try {
+                if (!window.api) {
+                    throw new Error('API service is not initialized');
+                }
+                
+                const result = await window.api.testAuth();
+                
+                let statusClass = result.success ? 'status-success' : 'status-error';
+                let statusText = result.success ? 'Success' : 'Failed';
+                
+                const jsonOutput = JSON.stringify(result, null, 2);
+                
+                resultsEl.innerHTML = `
+                    <div>
+                        <p><span class="status ${statusClass}">${statusText}</span></p>
+                        <pre class="json-data">${jsonOutput}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultsEl.innerHTML = `
+                    <div>
+                        <p><span class="status status-error">Error</span></p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            localStorage.removeItem('last_sync');
+            
+            alert('Authentication data cleared');
+            checkAuthStatus();
+            displayLocalStorage();
+        }
+        
+        function goToLogin() {
+            window.location.href = 'login.html';
+        }
+        
+        function updateToken() {
+            const tokenEl = document.getElementById('tokenValue');
+            const newToken = tokenEl.value.trim();
+            
+            if (!newToken) {
+                alert('Please enter a token');
+                return;
+            }
+            
+            localStorage.setItem('auth_token', newToken);
+            
+            if (window.api) {
+                window.api.token = newToken;
+            }
+            
+            alert('Token updated');
+            checkAuthStatus();
+            displayLocalStorage();
+        }
+    </script>
+</body>
+</html>

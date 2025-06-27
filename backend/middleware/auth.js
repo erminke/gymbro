@@ -13,9 +13,18 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await db.getUserById(decoded.id);
+    // Handle both token formats - some tokens use id, others use userId
+    const userId = decoded.id || decoded.userId;
+    
+    if (!userId) {
+      console.error('Invalid token format - no userId or id found');
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+    
+    const user = await db.getUserById(userId);
     
     if (!user) {
+      console.error(`No user found with id: ${userId}`);
       return res.status(401).json({ error: 'Invalid token.' });
     }
 

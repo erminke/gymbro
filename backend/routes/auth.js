@@ -6,6 +6,74 @@ const router = express.Router();
 // Use consistent JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'GymBro2024_SecureJWT_ProductionKey_9X2mK8pL4nQ7sR1vW6tY3uE5oI8aB2cD';
 
+// Create test user endpoint (for development and testing)
+router.post('/create-test-user', async (req, res) => {
+  try {
+    console.log('Create test user endpoint called');
+    
+    // Default test user credentials
+    const testEmail = 'erminke@gmail.com';
+    const testPassword = 'Password123';
+    const testName = 'Ermin Test User';
+    
+    // Check if user exists
+    const existingUser = await db.getUserByEmail(testEmail);
+    
+    if (existingUser) {
+      console.log('Test user already exists, returning existing user');
+      return res.json({
+        message: 'Test user already exists',
+        user: { 
+          id: existingUser.id, 
+          email: existingUser.email,
+          name: existingUser.name
+        },
+        password: testPassword, // It's safe to return this since it's a test account
+        note: 'This user already existed in the database'
+      });
+    }
+    
+    // Create test user
+    const hashedPassword = await require('bcryptjs').hash(testPassword, 10);
+    
+    // Insert the user directly using db.run for more reliable insertion
+    db.db.run(
+      'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
+      [testEmail, hashedPassword, testName],
+      function(err) {
+        if (err) {
+          console.error('Error inserting test user:', err);
+          return res.status(500).json({ error: `Failed to create test user: ${err.message}` });
+        }
+        
+        const userId = this.lastID;
+        console.log(`Test user created with ID: ${userId}`);
+        
+        // Generate token
+        const token = jwt.sign(
+          { id: userId, email: testEmail }, 
+          JWT_SECRET,
+          { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
+        
+        res.json({
+          message: 'Test user created successfully',
+          user: { 
+            id: userId, 
+            email: testEmail, 
+            name: testName 
+          },
+          token,
+          password: testPassword, // It's safe to return this since it's a test account
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Create test user error:', error);
+    res.status(500).json({ error: `Failed to create test user: ${error.message}` });
+  }
+});
+
 // Register
 router.post('/register', async (req, res) => {
   try {

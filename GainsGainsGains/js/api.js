@@ -14,10 +14,19 @@ class APIService {
             return 'http://localhost:3000/api';
         }
         
-        // For production deployment, use the actual backend URL
-        // Add a logging statement to debug API URL in production
+        // For production deployment, use the deployed backend URL
+        // Use correct Vercel app URL where backend is deployed
         const apiUrl = 'https://gymbro-seven.vercel.app/api';
-        console.log('Using API URL:', apiUrl);
+        console.log('Using production API URL:', apiUrl);
+        
+        // Log token for debugging
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            console.log('Token exists, first few characters:', token.substring(0, 10) + '...');
+        } else {
+            console.log('No auth token found');
+        }
+        
         return apiUrl;
     }
 
@@ -67,6 +76,7 @@ class APIService {
 
     async login(email, password) {
         try {
+            console.log(`Attempting login for user: ${email}`);
             const response = await fetch(`${this.baseURL}/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -75,12 +85,31 @@ class APIService {
                 body: JSON.stringify({ email, password })
             });
 
+            console.log('Login response status:', response.status);
             const data = await response.json();
+            console.log('Login response:', data);
             
             if (response.ok) {
+                if (!data.token) {
+                    console.error('No token returned from server!');
+                    return { success: false, error: 'Server error: No token provided' };
+                }
+                
                 this.token = data.token;
-                localStorage.setItem('auth_token', this.token);
-                localStorage.setItem('user_data', JSON.stringify(data.user));
+                
+                // Store auth data carefully, with logging
+                try {
+                    localStorage.setItem('auth_token', this.token);
+                    console.log('Auth token stored successfully');
+                    
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                    console.log('User data stored successfully');
+                    
+                    // Debug: log token information
+                    console.log('Token first characters:', this.token.substring(0, 15) + '...');
+                } catch (storageError) {
+                    console.error('Error storing auth data:', storageError);
+                }
                 
                 // Clear any existing local data from previous sessions
                 this.clearLocalAppData();
@@ -97,6 +126,7 @@ class APIService {
                 
                 return { success: true, user: data.user, token: data.token };
             } else {
+                console.error('Login failed:', data.error);
                 return { success: false, error: data.error };
             }
         } catch (error) {
@@ -178,6 +208,42 @@ class APIService {
     getUser() {
         const userData = localStorage.getItem('user_data');
         return userData ? JSON.parse(userData) : null;
+    }
+
+    // Auth test function for debugging purposes
+    async testAuth() {
+        try {
+            if (!this.token) {
+                console.error('No auth token available');
+                return { success: false, error: 'No auth token' };
+            }
+            
+            console.log('Testing authentication with token:', this.token.substring(0, 15) + '...');
+            
+            const response = await fetch(`${this.baseURL}/auth-test`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+            
+            const data = await response.json();
+            console.log('Auth test response:', data);
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                data: data
+            };
+        } catch (error) {
+            console.error('Auth test failed:', error);
+            return { 
+                success: false, 
+                error: error.message,
+                isNetworkError: true
+            };
+        }
     }
 
     // Data sync methods

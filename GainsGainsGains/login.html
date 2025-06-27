@@ -380,16 +380,30 @@
                 }
 
                 if (result.success) {
+                    // Double check that auth_token is properly set in localStorage
+                    const storedToken = localStorage.getItem('auth_token');
+                    if (!storedToken) {
+                        console.error('Token not properly stored after login!');
+                        // Force set it again
+                        localStorage.setItem('auth_token', result.token);
+                        console.log('Manually set auth_token in localStorage');
+                    } else {
+                        console.log('Token stored successfully in localStorage');
+                    }
+                    
                     showMessage(
                         authMode === 'login' ? 'Login successful! Redirecting...' : 'Account created! Redirecting...', 
                         'success'
                     );
+                    
+                    console.log('Authentication successful, will redirect in 1.5 seconds');
                     
                     // Redirect to main app
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
+                    console.error('Authentication failed:', result.error);
                     showMessage(result.error || 'Authentication failed', 'error');
                 }
             } catch (error) {

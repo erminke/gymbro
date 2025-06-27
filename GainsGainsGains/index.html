@@ -58,13 +58,28 @@
                     throw new Error('Invalid token');
                 }
                 
-                const data = await response.json();
-                console.log('Auth verify response:', data);
+                // Try to parse the response as JSON
+                let data;
+                try {
+                    data = await response.json();
+                    console.log('Auth verify response:', data);
+                } catch (parseError) {
+                    console.error('Failed to parse auth response as JSON:', parseError);
+                    throw new Error('Invalid response format');
+                }
+                
+                // Detailed validation for debugging
+                console.log('Token validation check:', {
+                    hasValidField: !!data.valid,
+                    hasUserObject: !!data.user,
+                    responseStatus: response.status,
+                    hasError: !!data.error
+                });
                 
                 // Check if data contains valid field, or if there's a user object (both are valid responses)
                 if (!data.valid && !data.user) {
                     console.error('Token not valid, data:', data);
-                    throw new Error('Token not valid');
+                    throw new Error('Token not valid: ' + (data.error || 'Unknown error'));
                 }
                 
                 // Token is valid, show the app

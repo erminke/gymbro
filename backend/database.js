@@ -155,13 +155,24 @@ class DatabaseManager {
   }
 
   getUserById(id) {
+    console.log(`Retrieving user with ID: ${id}`);
     return new Promise((resolve, reject) => {
       this.db.get(
         'SELECT id, email, name, created_at FROM users WHERE id = ?',
         [id],
         (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
+          if (err) {
+            console.error(`Error retrieving user with ID ${id}:`, err);
+            reject(err);
+          }
+          else {
+            if (row) {
+              console.log(`Found user with ID ${id}:`, row.email);
+            } else {
+              console.warn(`No user found with ID: ${id}`);
+            }
+            resolve(row);
+          }
         }
       );
     });
