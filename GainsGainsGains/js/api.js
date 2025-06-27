@@ -15,7 +15,10 @@ class APIService {
         }
         
         // For production deployment, use the actual backend URL
-        return 'https://gymbro-seven.vercel.app/api';
+        // Add a logging statement to debug API URL in production
+        const apiUrl = 'https://gymbro-seven.vercel.app/api';
+        console.log('Using API URL:', apiUrl);
+        return apiUrl;
     }
 
     setupNetworkListeners() {

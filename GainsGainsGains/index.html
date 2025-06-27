@@ -30,15 +30,26 @@
             
             if (!token) {
                 // No token, redirect to login
+                console.log('No auth token found, redirecting to login');
                 window.location.href = 'login.html';
                 return;
             }
             
             try {
+                // Show debugging info
+                console.log('Auth token found, verifying...');
+                
                 // Verify token with server
                 const apiUrl = getApiUrl();
+                console.log('Using API URL for verification:', apiUrl);
+                
                 const response = await fetch(`${apiUrl}/auth/verify`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'GET'
                 });
                 
                 if (!response.ok) {
@@ -48,12 +59,15 @@
                 }
                 
                 const data = await response.json();
+                console.log('Auth verify response:', data);
+                
                 if (!data.valid) {
-                    console.error('Auth verify response:', data);
+                    console.error('Token not valid, data:', data);
                     throw new Error('Token not valid');
                 }
                 
                 // Token is valid, show the app
+                console.log('Token verified successfully, showing app');
                 document.getElementById('app-container').style.display = 'block';
                 window.userAuthenticated = true;
             } catch (error) {
@@ -62,6 +76,7 @@
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_data');
                 localStorage.removeItem('last_sync');
+                console.log('Auth check failed, redirecting to login');
                 window.location.href = 'login.html';
             }
         })();
