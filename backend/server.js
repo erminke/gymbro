@@ -26,6 +26,7 @@ const corsOptions = {
       'http://127.0.0.1:5500',
       'http://localhost:5500',
       // Production frontend URLs
+      'https://gymbro-frontend.vercel.app',
       'https://gymbro-frontend-j5a8bv12c-erminkes-projects.vercel.app',
       'https://gymbro-frontend-aopj0nwsy-erminkes-projects.vercel.app',
       'https://gymbro-frontend-m5xixgnuc-erminkes-projects.vercel.app',
