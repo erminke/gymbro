@@ -14,10 +14,8 @@ class APIService {
             return 'http://localhost:3000/api';
         }
         
-        // For production, try to detect the backend URL
-        // You can set this manually or use environment variable
-        const prodUrl = window.GYMBRO_API_URL || `${window.location.protocol}//${window.location.hostname}/api`;
-        return prodUrl;
+        // For production deployment, use the actual backend URL
+        return 'https://gymbro-seven.vercel.app/api';
     }
 
     setupNetworkListeners() {

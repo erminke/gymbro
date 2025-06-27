@@ -25,8 +25,10 @@ const corsOptions = {
       'http://localhost:8000', 
       'http://127.0.0.1:5500',
       'http://localhost:5500',
-      // Production frontend URL
+      // Production frontend URLs
       'https://gymbro-frontend-j5a8bv12c-erminkes-projects.vercel.app',
+      'https://gymbro-frontend-aopj0nwsy-erminkes-projects.vercel.app',
+      'https://gymbro-frontend-m5xixgnuc-erminkes-projects.vercel.app',
       // Allow any vercel app domain for frontend deployments
       process.env.FRONTEND_URL
     ].filter(Boolean);
