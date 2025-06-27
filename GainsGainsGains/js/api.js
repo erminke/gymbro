@@ -1,10 +1,23 @@
 // API Service for Gymbro Backend Integration
 class APIService {
     constructor() {
-        this.baseURL = 'http://localhost:3000/api';
+        // Auto-detect API URL based on environment
+        this.baseURL = this.getApiUrl();
         this.token = localStorage.getItem('auth_token');
         this.isOnline = navigator.onLine;
         this.setupNetworkListeners();
+    }
+
+    getApiUrl() {
+        // Check if we're running locally
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return 'http://localhost:3000/api';
+        }
+        
+        // For production, try to detect the backend URL
+        // You can set this manually or use environment variable
+        const prodUrl = window.GYMBRO_API_URL || `${window.location.protocol}//${window.location.hostname}/api`;
+        return prodUrl;
     }
 
     setupNetworkListeners() {

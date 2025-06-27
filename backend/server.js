@@ -13,12 +13,39 @@ const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['your-frontend-domain.com'] 
-    : ['http://localhost:3000', 'http://localhost:8000', 'http://127.0.0.1:5500'], // Common dev servers
-  credentials: true
-}));
+
+// Dynamic CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:8000', 
+      'http://127.0.0.1:5500',
+      'http://localhost:5500',
+      // Add your production domain here
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+    
+    // In development, allow any localhost
+    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
