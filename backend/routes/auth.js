@@ -162,36 +162,88 @@ router.post('/login', async (req, res) => {
 // Verify token (for frontend to check if user is still authenticated)
 router.get('/verify', async (req, res) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('Token verification endpoint called');
+    const authHeader = req.header('Authorization');
+    console.log('Authorization header:', authHeader ? `${authHeader.substring(0, 15)}...` : 'Not provided');
+    console.log('Request Origin:', req.headers.origin || 'No Origin');
+    console.log('URL Path:', req.originalUrl);
+    
+    const token = authHeader?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      console.log('No token provided in request');
+      return res.status(401).json({ 
+        valid: false, 
+        error: 'No token provided',
+        debug: { 
+          authHeader,
+          allHeaders: req.headers,
+          path: req.path
+        }
+      });
     }
 
-    // Decode token and handle both formats: { id } and { userId }
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.id || decoded.userId;
+    console.log(`Token received (first 10 chars): ${token.substring(0, 10)}...`);
     
-    if (!userId) {
-      return res.status(401).json({ error: 'Invalid token format' });
-    }
-    
-    const user = await db.getUserById(userId);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    res.json({
-      valid: true,
-      user: { 
-        id: user.id, 
-        email: user.email, 
-        name: user.name 
+    try {
+      // Decode token and handle both formats: { id } and { userId }
+      const decoded = jwt.verify(token, JWT_SECRET);
+      console.log('Token decoded successfully:', decoded);
+      
+      const userId = decoded.id || decoded.userId;
+      console.log(`Extracted user ID: ${userId}`);
+      
+      if (!userId) {
+        console.warn('No user ID found in token payload');
+        return res.status(401).json({ 
+          valid: false, 
+          error: 'Invalid token format - no user ID',
+          debug: { decoded }
+        });
       }
-    });
+      
+      // Try to find the user in the database
+      const user = await db.getUserById(userId);
+      
+      if (!user) {
+        console.warn(`No user found with ID: ${userId}`);
+        return res.status(401).json({ 
+          valid: false, 
+          error: 'User not found',
+          debug: { userId }
+        });
+      }
+
+      console.log(`User found: ${user.email}`);
+      
+      // Return successful response with user data
+      res.json({
+        valid: true,
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          name: user.name 
+        },
+        debug: {
+          decodedTokenExpiry: decoded.exp ? new Date(decoded.exp * 1000).toISOString() : 'No expiry',
+          tokenAge: decoded.iat ? `${Math.floor((Date.now() - decoded.iat*1000) / 1000 / 60)} minutes` : 'Unknown'
+        }
+      });
+    } catch (error) {
+      console.error('Token verification error:', error);
+      res.status(401).json({ 
+        valid: false, 
+        error: `Invalid token: ${error.message}`,
+        debug: { tokenReceived: token ? true : false }
+      });
+    }
   } catch (error) {
-    res.status(401).json({ valid: false, error: 'Invalid token' });
+    console.error('Token verification error:', error);
+    res.status(401).json({ 
+      valid: false, 
+      error: `Invalid token: ${error.message}`,
+      debug: { tokenReceived: token ? true : false }
+    });
   }
 });
 

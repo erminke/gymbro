@@ -15,9 +15,9 @@ class APIService {
         }
         
         // For production deployment, use the deployed backend URL
-        // Use correct Vercel app URL where backend is deployed
+        // Fixed URL for Vercel deployment - backend is deployed at gymbro-seven.vercel.app
         const apiUrl = 'https://gymbro-seven.vercel.app/api';
-        console.log('Using production API URL:', apiUrl);
+        console.log('Using backend API URL:', apiUrl);
         
         // Log token for debugging
         const token = localStorage.getItem('auth_token');

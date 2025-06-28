@@ -14,48 +14,28 @@ const PORT = process.env.PORT || 3000;
 // Security middleware
 app.use(helmet());
 
-// Dynamic CORS configuration with support for all possible frontend origins
+// Configure CORS to specifically allow the frontend domain
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('Request origin:', origin || 'No origin');
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // In non-production, allow all origins for easy development
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    
-    // In production, check for allowed domains but be permissive
-    // We'll allow all vercel.app domains and any domains stored in allowed origins
+    // Allow requests from the frontend domain (and no origin for same-domain requests)
     const allowedOrigins = [
-      // Local development
-      'http://localhost:3000',
-      'http://localhost:8000', 
-      'http://127.0.0.1:5500',
-      'http://localhost:5500',
-      // Production frontend URLs
       'https://gymbro-frontend.vercel.app',
-      'https://gymbro-frontend-j5a8bv12c-erminkes-projects.vercel.app',
-      'https://gymbro-frontend-aopj0nwsy-erminkes-projects.vercel.app',
-      'https://gymbro-frontend-m5xixgnuc-erminkes-projects.vercel.app',
-      'https://gymbro-erminkes-projects.vercel.app',
-      // Allow frontend URL from environment variable
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://127.0.0.1:3000'
+    ];
     
-    // Allow any vercel.app domain for deployment
-    if (origin.includes('.vercel.app')) {
-      console.log('Allowing Vercel app domain:', origin);
-      return callback(null, true);
-    }
+    // No origin is common for same-domain requests or certain browsers
+    const originAllowed = !origin || allowedOrigins.includes(origin);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (originAllowed) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`Origin rejected by CORS policy: ${origin}`);
+      callback(null, true); // Still allow all origins as fallback for now
     }
   },
   credentials: true,
@@ -67,15 +47,37 @@ const corsOptions = {
 // Apply CORS configuration
 app.use(cors(corsOptions));
 
-// Add custom headers to make sure authentication works properly
+// Add specialized CORS headers for all responses to ensure cross-domain requests work
 app.use((req, res, next) => {
-  // Log request method and path for debugging
-  console.log(`${req.method} ${req.path}`);
+  // Get the origin from the request headers
+  const origin = req.headers.origin;
   
-  // Additional security and CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  // Define allowed origins (must match the frontend domains)
+  const allowedOrigins = [
+    'https://gymbro-frontend.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:3000'
+  ];
+  
+  // Set the appropriate CORS header based on the origin
+  if (origin && allowedOrigins.includes(origin)) {
+    // If it's one of our allowed origins, echo back that specific origin
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // Fall back to the incoming origin or * as last resort
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight OPTIONS requests automatically
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
   
   next();
 });
@@ -103,6 +105,35 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV 
   });
+});
+
+// Database check - useful for Vercel debugging
+app.get('/api/db-check', async (req, res) => {
+  try {
+    // Try to get all users (limited info only)
+    const users = await new Promise((resolve, reject) => {
+      db.db.all('SELECT id, email, name FROM users', (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+    
+    res.json({ 
+      status: 'OK', 
+      databaseAccess: true,
+      userCount: users.length,
+      demoUserExists: users.some(u => u.email === 'test@example.com'),
+      vercel: process.env.VERCEL === '1',
+      dbPath: process.env.VERCEL ? '/tmp/gymbro.db' : './database/gymbro.db'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      databaseAccess: false,
+      error: error.message,
+      vercel: process.env.VERCEL === '1'
+    });
+  }
 });
 
 // Test authentication endpoint - useful for debugging
