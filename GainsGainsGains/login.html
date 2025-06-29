@@ -245,7 +245,8 @@
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 return 'http://localhost:3000/api';
             }
-            return window.GYMBRO_API_URL || `${window.location.protocol}//${window.location.hostname}/api`;
+            // Use the same backend URL as the API service
+            return 'https://gymbro-seven.vercel.app/api';
         }
 
         // Check if user is already logged in
@@ -380,15 +381,46 @@
                 }
 
                 if (result.success) {
+                    console.log('=== LOGIN SUCCESS DEBUG ===');
+                    console.log('Login result:', result);
+                    console.log('Token from result:', result.token);
+                    console.log('User from result:', result.user);
+                    
+                    // Ensure the token is stored immediately
+                    if (result.token) {
+                        localStorage.setItem('auth_token', result.token);
+                        console.log('Token stored in localStorage immediately after login');
+                        
+                        // Verify it was stored
+                        const verifyToken = localStorage.getItem('auth_token');
+                        console.log('Verification - token retrieved from localStorage:', verifyToken ? verifyToken.substring(0, 15) + '...' : 'NOT FOUND');
+                        
+                        if (!verifyToken) {
+                            console.error('CRITICAL: Token was not stored in localStorage!');
+                        }
+                    } else {
+                        console.error('CRITICAL: No token in login result!');
+                    }
+                    
                     // Double check that auth_token is properly set in localStorage
                     const storedToken = localStorage.getItem('auth_token');
                     if (!storedToken) {
                         console.error('Token not properly stored after login!');
                         // Force set it again
-                        localStorage.setItem('auth_token', result.token);
-                        console.log('Manually set auth_token in localStorage');
+                        if (result.token) {
+                            localStorage.setItem('auth_token', result.token);
+                            console.log('Manually set auth_token in localStorage');
+                        }
                     } else {
                         console.log('Token stored successfully in localStorage');
+                    }
+                    
+                    // Log all localStorage contents for debugging
+                    console.log('Current localStorage contents:');
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        const value = localStorage.getItem(key);
+                        console.log(`  ${key}:`, key === 'auth_token' ? value.substring(0, 15) + '...' : value.substring(0, 50) + '...');
                     }
                     
                     showMessage(

@@ -21,12 +21,24 @@
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 return 'http://localhost:3000/api';
             }
-            return window.GYMBRO_API_URL || `${window.location.protocol}//${window.location.hostname}/api`;
+            // Use the same backend URL as the API service
+            return 'https://gymbro-seven.vercel.app/api';
         }
         
         // Check authentication before loading the app
         (async function() {
+            console.log('=== AUTHENTICATION CHECK DEBUG ===');
+            
+            // Log all localStorage contents for debugging
+            console.log('Current localStorage contents:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                console.log(`  ${key}:`, key === 'auth_token' ? (value ? value.substring(0, 15) + '...' : 'NULL') : value?.substring(0, 50) + '...');
+            }
+            
             const token = localStorage.getItem('auth_token');
+            console.log('Auth token check:', token ? `Found: ${token.substring(0, 15)}...` : 'NOT FOUND');
             
             if (!token) {
                 // No token, redirect to login

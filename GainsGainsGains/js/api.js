@@ -107,16 +107,32 @@ class APIService {
                     
                     // Debug: log token information
                     console.log('Token first characters:', this.token.substring(0, 15) + '...');
+                    
+                    // Verify token was stored
+                    const verifyToken = localStorage.getItem('auth_token');
+                    console.log('Token verification after storage:', verifyToken ? 'SUCCESS' : 'FAILED');
+                    
                 } catch (storageError) {
                     console.error('Error storing auth data:', storageError);
                 }
                 
-                // Clear any existing local data from previous sessions
+                // Clear any existing local data from previous sessions AFTER storing auth data
                 this.clearLocalAppData();
+                
+                // Verify token is still there after clearing app data
+                const tokenAfterClear = localStorage.getItem('auth_token');
+                console.log('Token check after clearLocalAppData:', tokenAfterClear ? 'STILL PRESENT' : 'MISSING!');
+                if (!tokenAfterClear) {
+                    console.error('CRITICAL: Token was removed by clearLocalAppData! Restoring...');
+                    localStorage.setItem('auth_token', this.token);
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                }
                 
                 // Try to load THIS user's data from server (don't fail login if sync fails)
                 try {
                     console.log('🔄 Loading user data from server after login...');
+                    // Small delay to ensure localStorage operations are complete
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     await this.syncFromServer();
                     console.log('✅ User data synced successfully');
                 } catch (syncError) {
