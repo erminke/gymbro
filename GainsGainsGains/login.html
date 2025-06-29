@@ -429,9 +429,14 @@
                     );
                     
                     console.log('Authentication successful, will redirect in 1.5 seconds');
+                    console.log('Final localStorage check before redirect:');
+                    console.log('  auth_token:', localStorage.getItem('auth_token') ? 'EXISTS' : 'MISSING');
+                    console.log('  user_data:', localStorage.getItem('user_data') ? 'EXISTS' : 'MISSING');
                     
                     // Redirect to main app
                     setTimeout(() => {
+                        console.log('🔄 About to redirect to index.html');
+                        console.log('Final auth_token check:', localStorage.getItem('auth_token') ? 'STILL EXISTS' : 'GONE!');
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
